@@ -1,0 +1,328 @@
+import discord
+print("Hello world)
+
+@client.command()
+async def new_game(ctx):
+    global player1,player2,board,spots_remaining,p1sign,p2sign
+    p1sign = '🇽'  
+    p2sign = '🅾️'
+    spots_remaining = 9
+    board =[
+          ['   ', '   ','   '],
+          ['   ', '   ','   '],
+          ['   ', '   ','   ']] 
+    player1 = str()
+    player2 = str()
+    await ctx.send("New game started, looking for players")
+    #await print_board(ctx)
+async def check_win(game):
+    for x in range(3):
+        character = game[x][0]
+        winning = True
+        if character == "   ":
+            winning = False
+        for y in range(3):
+            if character != game[x][y]:
+                winning = False
+        if winning == True:
+            return(True)
+
+    for x in range(3):
+        character = game[0][x]
+        winning = True
+        if character == "   ":
+            winning = False
+        for y in range(3):
+            if character != game[y][x]:
+                winning = False
+        if winning == True:
+            return(True)
+    if game[0][0] == game [1][1] and game[0][0]== game[2][2] and game[0][0] != "   ":
+        #print("DIAGNOAL 1")
+        return(True)
+    if game[2][0] == game [1][1] and game[2][0]== game[0][2] and game[2][0] != "   ":
+        #print("DIAGNOAL 2")
+        return(True)
+
+
+
+async def min_max(depth,game,player,ctx,starting_depth):
+   # print("called")
+    #player = letter eg 'X'
+    best_move = 0 
+    best_score  =  0
+    if player == "X":
+        next_player = 'O'
+        best_score = INFINITY
+    else:
+        next_player = 'X'
+        best_score = -INFINITY
+    if await check_win(game)== True:
+        #print("FOUND WIN ")
+        
+        if next_player =="O": #The player that moved before this turn is the current next player 
+            return(10)
+        else:
+            return(-10)
+
+    if depth > 0 :
+        
+        for i in range(9):
+            #print(str(math.floor(i/3))+str(i%3))
+            #await ctx.send("new depth" + str(depth))
+            if not game[0].__contains__('   ') and not game[1].__contains__('   ')  and not game[2].__contains__('   ') :
+                #print("Full board ")
+                return(0)
+            if game[math.floor(i/3)][i%3] == '   ':
+                new_board = copy.deepcopy(game)
+                new_board[math.floor(i/3)][i%3] = player
+                
+               
+                if depth != starting_depth:
+                    if player == "O":
+                        best_score = (max(await  min_max(depth-1,new_board,next_player,ctx,starting_depth),best_score))
+                    else:
+                        best_score = (min(await  min_max(depth-1,new_board,next_player,ctx,starting_depth),best_score))
+                else:
+                    if player == "O":
+                        score = await min_max(depth-1,new_board,next_player,ctx,starting_depth)
+                        
+                        if  score >best_score:
+
+                            best_move = i 
+                            best_score = score
+                    else:
+                        score = await min_max(depth-1,new_board,next_player,ctx,starting_depth)
+                        
+                        if  score <best_score:
+                            best_move = i 
+                            best_score = score
+        if depth != starting_depth:
+            return(best_score)
+        else:
+            print(best_score)
+            return(best_move)
+    else:
+        return(0)
+
+
+
+@client.command()
+async def add_bot(ctx , difficulty: int ):
+    global bot_depth,playersturn,player1,player2
+    if player1 == '':
+        player1 = "Bot"
+        await ctx.send("Botman Joined as player1")
+        bot_depth = difficulty
+    elif player2 == '':
+        player2 = "Bot"
+        await ctx.send("Botman Joined as player2")
+        playersturn = player1
+        bot_depth = difficulty
+        playersturn = player1
+        #await ctx.send( ctx.author.mention + " Joined as player2")
+        await ctx.send("Game is now full")
+        if player1 !="Bot":
+            await ctx.send("<@"+str(player1)+ "> It is now your turn")
+    else:
+        await ctx.send("Game is full")
+
+@client.command()
+async def join_game(ctx, sign):
+    global player1,player2,playersturn,p1sign,p2sign
+    if player1 == '':
+        player1 =  ctx.author.id
+        if sign != "":
+            p1sign = sign
+        message = await ctx.send( ctx.author.mention + " Joined as player1")
+        await message.add_reaction(p1sign)
+        
+    elif player2 == '':
+        if player1 != ctx.author.id:
+            player2 =  ctx.author.id
+            if sign != "":
+                p2sign = sign
+            playersturn = player1
+            message = await ctx.send( ctx.author.mention + " Joined as player2")
+            await message.add_reaction(p2sign)
+            await ctx.send("Game is now full")
+            if player1 !="Bot":
+                await ctx.send("<@"+str(player1)+ "> It is now your turn")
+            else:
+                move = await  min_max(bot_depth,board,'X',ctx,bot_depth)
+                if playersturn == player1:
+                    board[math.floor(move/3)][move%3] = "X"
+                else:
+                     board[math.floor(move/3)][move%3] = "O"
+                playersturn = player2
+                await print_board(ctx, "X", "O")
+                await ctx.send("<@"+str(playersturn)+ "> It is now your turn")
+        else:
+            await ctx.send("Sorry you can not play agaisnt yourself")
+    else:
+        await ctx.send("Game is full")
+
+
+
+
+async def print_board(ctx, player_character, opposing):
+    global player1, player2, playersturn 
+    print_board = str()
+    for x in range(3):
+        out = ''
+        for y in range(3):
+            out += '|'
+            out += board[x][y]
+            #if y != 2:
+        out += "|"
+        print_board += out 
+        
+   
+        print_board += '\n'
+    print_board= print_board.replace("O", p2sign)
+    print_board = print_board.replace("X", p1sign)
+    print_board =print_board.replace("   ", "⬛")
+    
+    await ctx.send(print_board)
+    
+
+
+   
+    for x in range(3):
+        character = board[x][0]
+        winning = True
+        if character == "   ":
+            winning = False
+       
+        for y in range(3):
+            if character != board[x][y]:
+                winning = False
+        if winning == True:
+            if bot_move == False:
+                await ctx.send(ctx.author.mention + "Won")
+            else:
+                message  = await ctx.send("@Person" + "Won")
+                await message.add_reaction('🇱')
+                await message.add_reaction('🇧')
+                await message.add_reaction('🇴')
+                await message.add_reaction('🇿' )
+                await message.add_reaction('😴')
+                await message.add_reaction('💪🏻')
+                await message.add_reaction('👏🏻')
+
+            player1 = ''
+            player2 = ''
+            playersturn = ''
+    
+
+    for x in range(3):
+        character = board[0][x]
+        winning = True
+        if character == "   ":
+            winning = False
+        for y in range(3):
+            if character != board[y][x]:
+                winning = False
+        if winning == True:
+            if bot_move == False:
+                await ctx.send(ctx.author.mention + "Won")
+            else:
+                message  = await ctx.send("@Person" + "Won")
+                await message.add_reaction('🇱')
+                await message.add_reaction('🇧')
+                await message.add_reaction('🇴')
+                await message.add_reaction('🇿' )
+                await message.add_reaction('😴')
+                await message.add_reaction('💪🏻')
+                await message.add_reaction('👏🏻')
+            player1 = ''
+            player2 = ''
+            playersturn = ''
+    if board[0][0] == board [1][1] and board[0][0]== board[2][2] and board[0][0] != "   ":
+        if bot_move == False:
+            await ctx.send(ctx.author.mention + "Won")
+        else:
+            message  = await ctx.send("@Person" + "Won")
+            await message.add_reaction('🇱')
+            await message.add_reaction('🇧')
+            await message.add_reaction('🇴')
+            await message.add_reaction('🇿' )
+            await message.add_reaction('😴')
+            await message.add_reaction('💪🏻')
+            await message.add_reaction('👏🏻')
+        player1 = ''
+        player2 = ''
+        playersturn = ''
+    if board[2][0] == board [1][1] and board[2][0]== board[0][2] and board[2][0] != "   ":
+        if bot_move == False:
+            await ctx.send(ctx.author.mention + "Won")
+        else:
+            message  = await ctx.send("@Person" + "Won")
+            await message.add_reaction('🇱')
+            await message.add_reaction('🇧')
+            await message.add_reaction('🇴')
+            await message.add_reaction('🇿' )
+            await message.add_reaction('😴')
+            await message.add_reaction('💪🏻')
+            await message.add_reaction('👏🏻')
+        player1 = ''
+        player2 = ''
+        playersturn = ''
+        
+
+
+@client.command()
+async def play(ctx, ypos: int, xpos: int):
+    global playersturn,spots_remaining,bot_move
+    bot_move  = False
+    if ctx.author.id == playersturn:
+        #await ctx.send(position )
+        if playersturn == player1:
+            if board[xpos-1][ypos-1] == '   ':
+                board[xpos-1][ypos-1] = "X"
+                spots_remaining -=1  
+                #await ctx.send('X')
+                playersturn = player2
+                await print_board(ctx, "X", "O")
+                if playersturn != "Bot":
+                    await ctx.send("<@"+str(playersturn)+ "> It is now your turn")
+                else:
+                    await ctx.send("@"+'Person'+ " It is now your turn")
+                    move = await  min_max(bot_depth,board,'O',ctx,bot_depth)
+                    bot_move  = True
+                    #if playersturn == player1:
+                    board[math.floor(move/3)][move%3] = "O"
+                    spots_remaining -=1  
+                   # else:
+                        #board[math.floor(move/3)][move%3] = "O"
+                    playersturn = player1
+                    await print_board(ctx, "O", "X")
+                    if player1 != '':
+                        await ctx.send("<@"+str(playersturn)+ "> It is now your turn")
+            else:
+                await ctx.send("NAh they trynna cheat")
+        else:
+            if board[xpos-1][ypos-1] == '   ':
+                board[xpos-1][ypos-1] = "O"
+                spots_remaining -=1  
+                #await ctx.send('O')
+                playersturn = player1
+                await print_board(ctx, "O", "X")
+                if playersturn != "Bot":
+                    await ctx.send("<@"+str(playersturn)+ "> It is now your turn")
+                else:
+                    await ctx.send("@"+'Person'+ " It is now your turn")
+                    move = await  min_max(bot_depth,board,'X',ctx,bot_depth)
+                    bot_move  = True
+                    #if playersturn == player1:
+                    board[math.floor(move/3)][move%3] = "X"
+                    spots_remaining -=1  
+                   # else:
+                       # board[math.floor(move/3)][move%3] = "O"
+                    playersturn = player2
+                    await print_board(ctx, "X", "O")
+                    if player2 != '':
+                        await ctx.send("<@"+str(playersturn)+ "> It is now your turn")
+                #await ctx.send(player2.mention +" It is now your turn")
+            else:
+                await ctx.send("NAh they trynna cheat")
