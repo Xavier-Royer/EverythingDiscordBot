@@ -1,6 +1,6 @@
 #import discord
 
-#TOKEN = 'MTAwOTk5NjIwNDk5NTc4NDgwNQ.GsmFAJ.ZNzmLTG1YfrFuI7frAPqA0eL2rUx_vt8WpWLMw'
+#TOKEN = "" insert token here
 
 #client = discord.Client()
 
@@ -867,8 +867,8 @@ async def air(ctx, place):
     air = soup.find('span' ,class_="wYbWKb")
     await ctx.send("The air quality in " +place +' is ' +air.text)
 
-#TOKEN = 'MTAwOTk5NjIwNDk5NTc4NDgwNQ.GsmFAJ.ZNzmLTG1YfrFuI7frAPqA0eL2rUx_vt8WpWLMw' person
-TOKEN = 'MTAxNzA2NTgyODQwMDc3NTIwOQ.Gs4jiD.-cfQL2GyUW0VzQY95orFQkgp366rcW_v32Ue_I' #personified
+
+TOKEN = '' your token here
 client.run(TOKEN) 
 #weather('antelope')
 
